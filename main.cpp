@@ -83,9 +83,9 @@ public:
     {
         return this->bookID;
     }
-    void setStatus(bool status)
+    void setStatus(bool Status)
     {
-        this->status = status;
+        this->status = Status;
     }
 };
 
@@ -728,7 +728,7 @@ void rentBooksWithStudentsName(Student stuData[], Book bkData[], Rentbooks rbDat
         for (int count = 0; count < getTotalRent(); count++)
         {
             cout << "     " << count + 1 << ". " << getStudentDetails(stuData, rbData[count].getUID()).getName();
-            cout << " - " << getBookDetails(bkData, rbData[count].getBookID()).getBookName() << endl;
+            cout << " - " << getBookDetails(bkData, rbData[count].getBookID()).getBookName() << "(" << getBookDetails(bkData, rbData[count].getBookID()).getID() << ")" << endl;
         }
         cout << endl
              << endl;
@@ -752,13 +752,24 @@ RRB:
 
     cout << "Enter UID of Student : ";
     cin >> UIDs;
+    cout << endl
+         << "Registered Books are : \n   ";
+    for (int count = 0; count < getTotalRent(); count++)
+    {
+        if (rbData[count].getUID() == UIDs)
+        {
+            cout << rbData[count].getBookID() << " ";
+        }
+    }
+    cout << endl
+         << endl;
     cout << "Enter Book ID : ";
     cin >> BookID;
 
     int avCheckBK = 0, chkID;
     for (int count = 0; count < getTotalRent(); count++)
     {
-        if (rbData[count].getUID() == BookID && rbData[count].getUID() == UIDs)
+        if (rbData[count].getBookID() == BookID && rbData[count].getUID() == UIDs)
         {
             avCheckBK++;
             chkID = count;
@@ -781,12 +792,36 @@ RRB:
         }
     }
 
-    // rbData[chkID]
+    /* Resetting the book availability to 0 (false) */
+    for (int count = 0; count < getTotalBooks(); count++)
+    {
+        if (bkData[count].getID() == BookID)
+        {
+            bkData[count].setStatus(0);
+        }
+    }
+    updateBookFile(bkData, getTotalBooks());
 
-    // ofstream bkDatabaseDotFile(dtRentBooks, ios::out);
+    /* Deleting the BookID and UID from the Object */
+    for (int count = chkID; count < (getTotalRent() - 1); count++)
+    {
+        int bkID = rbData[count + 1].getBookID();
+        int stUID = rbData[count + 1].getUID();
+        rbData[count].insert(stUID, bkID);
+    }
 
+    int current_totalRentNumber = getTotalRent() - 1;
 
-    cout << "\n0. Back 1. Re-Enter\n";
+    ofstream bkDatabaseDotFile(dtRentBooks, ios::out);
+
+    for (int count = 0; count < current_totalRentNumber; count++)
+    {
+        bkDatabaseDotFile << rbData[count].getUID() << endl
+                          << rbData[count].getBookID() << endl;
+    }
+    bkDatabaseDotFile.close();
+
+    cout << "\n0. Back \n1. Re-Enter\n";
     int choice = userInpCh();
     if (choice == 0)
     {
@@ -855,6 +890,10 @@ START:
             break;
         case 10:
             rentBooksWithStudentsName(stu, bookRaw, rentedStuBks);
+            break;
+        case 11:
+            returnRentBooks(bookRaw, rentedStuBks);
+            goto START;
             break;
         case 0:
             goto END;

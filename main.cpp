@@ -9,6 +9,7 @@ using namespace std;
 string databaseFile = "database/"; // file handling database location
 string dtStudent = "database/.studentsID";
 string dtBooks = "database/.books";
+string dtRentBooks = "database/.rentBooks";
 int stuDataCount = 4;
 
 class Student
@@ -82,6 +83,32 @@ public:
     {
         return this->bookID;
     }
+    void setStatus(bool status)
+    {
+        this->status = status;
+    }
+};
+
+class Rentbooks
+{
+private:
+    int UID;
+    int BookID;
+
+public:
+    void insert(int uid, int bookID)
+    {
+        this->UID = uid;
+        this->BookID = bookID;
+    }
+    int getUID()
+    {
+        return UID;
+    }
+    int getBookID()
+    {
+        return BookID;
+    }
 };
 
 int getTotalStudents(string filename)
@@ -110,6 +137,20 @@ int getTotalBooks()
     }
     data.close();
     return count / 3;
+}
+
+int getTotalRent()
+{
+    ifstream data(dtRentBooks);
+    int count = 0;
+    string _tmp;
+    while (!data.eof())
+    {
+        getline(data, _tmp);
+        count++;
+    }
+    data.close();
+    return count / 2;
 }
 
 int initializeAllStudents(Student stu[])
@@ -199,6 +240,9 @@ void showMenu()
     cout << "     6. Show All Books (" << getTotalBooks() << ")" << endl;
     cout << "     7. Show Available Books" << endl;
     cout << "     8. Register New Books" << endl;
+    cout << "     9. Books Rent to Students" << endl;
+    cout << "    10. Rent books with student name" << endl;
+    cout << "    11. Return rent books(" << getTotalRent() << ")" << endl;
     cout << "     0. Exit Application" << endl;
 }
 
@@ -350,7 +394,7 @@ void showBook(Book dataBook)
     cout << "Book Name   : " << bName << endl;
     cout << "Author      : " << bAuthor << endl;
     cout << "Book ID     : " << ID << endl;
-    cout << "Available   : " << available << endl;
+    cout << "Availability   : " << available << endl;
 }
 
 int initializeBooks(Book dataIn[])
@@ -444,16 +488,332 @@ RNB:
         goto RNB;
 }
 
+bool studentAvailable(Student stu[], int UID)
+{
+    int av = 0;
+    for (int c = 0; c < getTotalStudents(dtStudent); c++)
+    {
+        if (stu[c].getUID() == UID)
+        {
+            av++;
+            cout << "\n";
+            showStudent(stu[c]);
+            cout << endl;
+        }
+    }
+    if (av < 1)
+        return false;
+    else
+        return true;
+}
+
+bool bookAvailable(Book bookData[], int ID)
+{
+    int av = 0;
+    for (int c = 0; c < getTotalBooks(); c++)
+    {
+        if (bookData[c].getID() == ID)
+        {
+            av++;
+            showBook(bookData[c]);
+        }
+    }
+    if (av < 1)
+        return false;
+    else
+        return true;
+}
+
+Student getStudentDetails(Student stu[], int uid)
+{
+    Student retVal;
+    for (int c = 0; c < getTotalStudents(dtStudent); c++)
+    {
+        if (stu[c].getUID() == uid)
+        {
+            retVal = stu[c];
+        }
+    }
+    return retVal;
+}
+
+Book getBookDetails(Book data[], int id)
+{
+    Book retVal;
+    for (int c = 0; c < getTotalStudents(dtBooks); c++)
+    {
+        if (data[c].getID() == id)
+        {
+            retVal = data[c];
+        }
+    }
+    return retVal;
+}
+
+void updateBookFile(Book bookData[], int totalBooks)
+{
+    ofstream bookFile(dtBooks);
+    for (int i = 0; i < totalBooks; i++)
+    {
+        bookFile << bookData[i].getBookName() << " " << bookData[i].getAuthor()
+                 << endl
+                 << bookData[i].getID() << endl
+                 << bookData[i].getStatus() << endl;
+    }
+    bookFile.close();
+}
+
+int getBkIndex(Book data[], int id)
+{
+    int retVal = 0;
+    for (int c = 0; c < getTotalStudents(dtBooks); c++)
+    {
+        if (data[c].getID() == id)
+            break;
+        retVal++;
+    }
+    return retVal;
+}
+
+bool checkStudentBookSlot(Rentbooks bkRntData[], int UID)
+{
+    int avCheck = 0;
+    for (int count = 0; count < getTotalRent(); count++)
+    {
+        if (bkRntData[count].getUID() == UID)
+            avCheck++;
+    }
+    return avCheck >= 3 ? false : true;
+}
+
+bool checkBooksAvailable(Book bkData[], int ID)
+{
+    return bkData[getBkIndex(bkData, ID)].getStatus();
+}
+
+void rentBooksStu(Student stuData[], Book bookData[], Rentbooks bookRented[])
+{
+RBS:
+    startupHeader();
+    cout << "/RentBooksStudents\n\n";
+
+    int UIDs, BookID;
+
+    cout << "Enter UID of Student : ";
+    cin >> UIDs;
+    if (!studentAvailable(stuData, UIDs))
+    {
+        cout << "Sorry, UID Student not Found.\n";
+        cout << "\n0. Back\n1. Retry";
+        int choice = userInpCh();
+        if (choice == 0)
+        {
+            return;
+        }
+        else
+            goto RBS;
+    }
+    if (!checkStudentBookSlot(bookRented, UIDs))
+    {
+        cout << "Sorry, Student already has max(3) books.\n";
+        cout << "\n0. Back\n1. Retry";
+        int choice = userInpCh();
+        if (choice == 0)
+        {
+            return;
+        }
+        else
+            goto RBS;
+    }
+GOTO_getBookID:
+    cout << "Enter Book ID : ";
+    cin >> BookID;
+    if (!bookAvailable(bookData, BookID))
+    {
+        cout << "Sorry, Book not Found.\n";
+        cout << "\n0. Back\n1. Retry";
+        int choice = userInpCh();
+        if (choice == 0)
+        {
+            return;
+        }
+        else
+        {
+            cout << endl;
+            goto GOTO_getBookID;
+        }
+    }
+    if (checkBooksAvailable(bookData, BookID))
+    {
+        cout << "Sorry, Book already taken .\n";
+        cout << "\n0. Back\n1. Retry";
+        int choice = userInpCh();
+        if (choice == 0)
+        {
+            return;
+        }
+        else
+        {
+            cout << endl;
+            goto GOTO_getBookID;
+        }
+    }
+    ofstream bookRentFl(databaseFile + ".rentBooks", ios::app);
+
+    bookRentFl << UIDs << endl
+               << BookID << endl;
+
+    bookRentFl.close();
+
+    int bIndex = getBkIndex(bookData, BookID);
+
+    bookData[bIndex].setStatus(true);
+
+    cout << endl
+         << getStudentDetails(stuData, UIDs).getName() << " has successfully rented "
+         << getBookDetails(bookData, BookID).getBookName() << " book.\n";
+
+    updateBookFile(bookData, getTotalBooks());
+
+    cout << "\n0. Back\n1. Rent more books";
+    int choice = userInpCh();
+    if (choice == 0)
+    {
+        return;
+    }
+    else
+        goto RBS;
+}
+
+void initializeRentBooks(Rentbooks rentBookdt[])
+{
+    /* Temporary Made for checking available rent books data */
+    ifstream _tmp_bookDt(dtRentBooks);
+    string _tmp_dtBookText;
+    _tmp_bookDt >> _tmp_dtBookText;
+
+    if (_tmp_dtBookText == "")
+    {
+        _tmp_bookDt.close();
+        return;
+    }
+    else
+    {
+        ifstream bookDt(dtRentBooks);
+        int rbUID, rbBookID;
+        for (int count = 0; count < getTotalRent(); count++)
+        {
+
+            bookDt >> rbUID;
+            bookDt >> rbBookID;
+            rentBookdt[count]
+                .insert(rbUID, rbBookID);
+        }
+        bookDt.close();
+    }
+    _tmp_bookDt.close();
+}
+
+void rentBooksWithStudentsName(Student stuData[], Book bkData[], Rentbooks rbData[])
+{
+    startupHeader();
+    cout << "/RentBooksWithStudentName\n\n";
+    if (getTotalRent() < 1)
+    {
+        cout << "Sorry there are no rented books." << endl;
+    }
+    else
+    {
+        cout << "The Students are : \n\n";
+        for (int count = 0; count < getTotalRent(); count++)
+        {
+            cout << "     " << count + 1 << ". " << getStudentDetails(stuData, rbData[count].getUID()).getName();
+            cout << " - " << getBookDetails(bkData, rbData[count].getBookID()).getBookName() << endl;
+        }
+        cout << endl
+             << endl;
+    }
+
+    cout << "\n0. Back\n";
+    int choice = userInpCh();
+    if (choice == 0)
+    {
+        return;
+    }
+}
+
+void returnRentBooks(Book bkData[], Rentbooks rbData[])
+{
+RRB:
+    startupHeader();
+    cout << "/ReturnRentedBooks\n\n";
+
+    int UIDs, BookID;
+
+    cout << "Enter UID of Student : ";
+    cin >> UIDs;
+    cout << "Enter Book ID : ";
+    cin >> BookID;
+
+    int avCheckBK = 0, chkID;
+    for (int count = 0; count < getTotalRent(); count++)
+    {
+        if (rbData[count].getUID() == BookID && rbData[count].getUID() == UIDs)
+        {
+            avCheckBK++;
+            chkID = count;
+        }
+    }
+
+    if (avCheckBK < 1)
+    {
+        cout << "Sorry, Registered Student for that Book doesn't exist.\n";
+        cout << "\n0. Back\n1. Retry";
+        int choice = userInpCh();
+        if (choice == 0)
+        {
+            return;
+        }
+        else
+        {
+            cout << endl;
+            goto RRB;
+        }
+    }
+
+    // rbData[chkID]
+
+    // ofstream bkDatabaseDotFile(dtRentBooks, ios::out);
+
+
+    cout << "\n0. Back 1. Re-Enter\n";
+    int choice = userInpCh();
+    if (choice == 0)
+    {
+        return;
+    }
+    else
+    {
+        goto RRB;
+    }
+}
+
 int main()
 {
 START:
     /* Retriving data from the Student Database */
     Student stu[50];
     Book bookRaw[50];
+    Rentbooks rentedStuBks[50];
+
     ifstream studentData(dtStudent);
     ifstream bookData(dtBooks);
+    ifstream rentBookdt(dtBooks);
+
     int lstUID = initializeAllStudents(stu);
     int lstBookID = initializeBooks(bookRaw);
+    initializeRentBooks(rentedStuBks);
+
     while (1)
     {
         startupHeader();
@@ -489,6 +849,13 @@ START:
             registerNewBooks(lstBookID);
             goto START;
             break;
+        case 9:
+            rentBooksStu(stu, bookRaw, rentedStuBks);
+            goto START;
+            break;
+        case 10:
+            rentBooksWithStudentsName(stu, bookRaw, rentedStuBks);
+            break;
         case 0:
             goto END;
             break;
@@ -496,6 +863,7 @@ START:
     }
 /* Ending of the Program */
 END:
+    rentBookdt.close();
     bookData.close();
     studentData.close();
     cout << endl

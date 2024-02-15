@@ -215,8 +215,8 @@ void previewIDCard(Student data)
 void startupHeader()
 {
     system("clear");
-    cout << "                Welcome to Library Management System" << endl;
-    cout << "              ----------------------------------------" << endl
+    cout << "   Welcome to Library Management System" << endl;
+    cout << "  ----------------------------------------" << endl
          << endl;
 }
 

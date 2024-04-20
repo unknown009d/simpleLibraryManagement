@@ -28,9 +28,25 @@ These instructions will get you a copy of the project up and running on your loc
 ### Installing
 
 1. Clone the repository to your local machine.
-2. Navigate to the project directory.
-3. Compile the project using your C++ compiler.
-4. Run the compiled file.
+   
+   ```{bash}
+   git clone https://github.com/unknown009d/simpleLibraryManagement.git
+   ```
+3. Navigate to the project directory.
+   
+   ```{bash}
+   cd simpleLibraryManagement
+   ```
+5. Compile the project using your C++ compiler.
+
+   ```{bash}
+   gcc main.cpp
+   ```
+6. Run the compiled file.
+   
+   ```{bash}
+   ./a.out
+   ```
 
 ## Usage
 
